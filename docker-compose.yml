@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  license-tracker:
+    build: .
+    container_name: license-tracker
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./app:/app
+    env_file:
+      - .env
+    restart: always

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login / Signup - License Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f2f2f2;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    img.logo {
+      display: block;
+      margin: 0 auto 20px;
+      height: 60px;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    .tabs {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+    .tabs button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background-color: #eee;
+      cursor: pointer;
+    }
+    .tabs button.active {
+      background-color: #007BFF;
+      color: white;
+    }
+    .form-section {
+      display: none;
+    }
+    .form-section.active {
+      display: block;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button.submit {
+      width: 100%;
+      padding: 10px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .error {
+      color: red;
+      text-align: center;
+      margin-top: 10px;
+    }
+    footer {
+      position: fixed;
+      bottom: 10px;
+      right: 20px;
+      font-size: 0.8em;
+      color: #D10074;
+    }
+  </style>
+  <script>
+    function showForm(formId) {
+      document.getElementById('login-form').classList.remove('active');
+      document.getElementById('signup-form').classList.remove('active');
+      document.getElementById(formId).classList.add('active');
+
+      document.getElementById('login-tab').classList.remove('active');
+      document.getElementById('signup-tab').classList.remove('active');
+      document.getElementById(formId + '-tab').classList.add('active');
+    }
+
+    window.onload = function() {
+      showForm('login-form');
+    };
+  </script>
+</head>
+<body>
+
+  <div class="container">
+    <img src="/static/logo.png" alt="BRAC Logo" class="logo">
+    <h2>License Tracker</h2>
+
+    <div class="tabs">
+      <button id="login-tab" class="active" onclick="showForm('login-form')">Login</button>
+      <button id="signup-tab" onclick="showForm('signup-form')">Signup</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="login-form" class="form-section active">
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <input type="hidden" name="action" value="login">
+        <button type="submit" class="submit">Login</button>
+      </form>
+      {% if error and source == 'login' %}
+        <div class="error">{{ error }}</div>
+      {% endif %}
+    </div>
+
+    <!-- Signup Form -->
+    <div id="signup-form" class="form-section">
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="text" name="username" placeholder="Choose a Username" required>
+        <input type="password" name="password" placeholder="Choose a Password" required>
+        <input type="hidden" name="action" value="signup">
+        <button type="submit" class="submit">Signup</button>
+      </form>
+      {% if error and source == 'signup' %}
+        <div class="error">{{ error }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <footer>
+    Developed by Farhan Uz Zaman
+  </footer>
+
+</body> 
+</html>

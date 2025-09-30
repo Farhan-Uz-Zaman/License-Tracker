@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard - License Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f9f9f9;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+    }
+    img.logo {
+      height: 50px;
+      margin-right: 15px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.5em;
+    }
+    .logout-form button {
+      padding: 8px 14px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .summary {
+      background-color: #e8f0fe;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    form {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    input {
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      flex: 1;
+      min-width: 150px;
+    }
+    button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .update-btn {
+      background-color: #007BFF;
+      color: white;
+    }
+    .delete-btn {
+      background-color: red;
+      color: white;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      background-color: #fff;
+      padding: 12px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+    .user-list {
+      margin-top: 40px;
+    }
+    footer {
+      position: fixed;
+      bottom: 10px;
+      right: 20px;
+      font-size: 0.8em;
+      color: #D10074;
+    }
+    @media (max-width: 600px) {
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      form {
+        flex-direction: column;
+      }
+    }
+  </style>
+  <script>
+    function toggleUpdate(id) {
+      const form = document.getElementById('update-form-' + id);
+      form.style.display = form.style.display === 'inline' ? 'none' : 'inline';
+    }
+  </script>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-left">
+      <img src="/static/logo.png" alt="BRAC Logo" class="logo">
+      <h1>Welcome, {{ user }}{% if role == 'admin' %} (admin){% endif %}</h1>
+    </div>
+    <form method="GET" action="/logout" class="logout-form">
+      <button type="submit">Logout</button>
+    </form>
+  </div>
+
+  {% if role == 'admin' %}
+    <div class="summary">
+      <strong>Summary:</strong><br>
+      Total Licenses: {{ licenses|length }}<br>
+      Expiring Soon (≤30 days): {{ expiring_soon }}<br>
+      Total Users: {{ total_users }}
+    </div>
+  {% endif %}
+
+  <form method="POST" action="/add">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="text" name="license_name" placeholder="License Name" required>
+    <input type="date" name="expiry_date" required>
+    <input type="email" name="owner_email" placeholder="Owner Email" required>
+    <input type="text" name="owner_name" placeholder="Owner Name" required>
+    <button type="submit">Add License</button>
+  </form>
+
+  <form method="GET" action="/dashboard">
+    <input type="text" name="query" placeholder="Search by license or owner name" value="{{ query }}">
+    <button type="submit">Search</button>
+  </form>
+
+  <h2>Tracked Licenses</h2>
+  {% if licenses %}
+    <ul>
+      {% for license in licenses %}
+        <li>
+          <strong>{{ license[1] }}</strong> — Expires: {{ license[2] }}
+          <br>Owner: {{ license[4] }} ({{ license[3] }})
+
+          {% if license[5] and license[6] %}
+            <br><em>Last updated by {{ license[5] }} on {{ license[6] }}</em>
+          {% endif %}
+
+          <button onclick="toggleUpdate({{ license[0] }})" class="update-btn">Update</button>
+          <form method="POST" action="/update/{{ license[0] }}" id="update-form-{{ license[0] }}" style="display:none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="date" name="new_expiry" required>
+            <button type="submit" class="update-btn">Save</button>
+          </form>
+
+          {% if role == 'admin' %}
+            <form method="POST" action="/delete/{{ license[0] }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="delete-btn" onclick="return confirm('Delete this license?')">Delete</button>
+            </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No licenses found.</p>
+  {% endif %}
+
+  {% if role == 'admin' %}
+    <div class="user-list">
+      <h2>Manage Users</h2>
+      <ul>
+        {% for u in users %}
+          <li>
+            {{ u[0] }}
+            {% if u[1] != 'admin' %}
+              {% if admin_count < 2 %}
+                <form method="POST" action="/promote/{{ u[0] }}" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                  <button type="submit" class="update-btn">Promote to Admin</button>
+                </form>
+              {% endif %}
+              <form method="POST" action="/transfer_admin/{{ u[0] }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="update-btn">Transfer Admin Role</button>
+              </form>
+            {% endif %}
+            <form method="POST" action="/delete_user/{{ u[0] }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button type="submit" class="delete-btn" onclick="return confirm('Delete this user?')">Delete User</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <footer>
+    Developed by Farhan Uz Zaman
+  </footer>
+
+</body>
+</html>
