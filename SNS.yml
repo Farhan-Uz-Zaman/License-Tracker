@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SNS Topic for License Expiry Notifications
+
+Resources:
+  LicenseAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: license-expiry-alerts
+      DisplayName: License Expiry Alerts
+      Subscription:
+        - Protocol: email
+          Endpoint: admin@example.com  # Optional initial subscription
+
+  SNSPublishPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: SNSPublishLicenseAlerts
+      Roles:
+        - !Ref LambdaExecutionRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - sns:Publish
+              - sns:Subscribe
+            Resource: !Ref LicenseAlertsTopic
+
+Parameters:
+  LambdaExecutionRoleName:
+    Type: String
+    Description: Name of the Lambda execution role
+    Default: BILicenseTracker-role-x46rugeh
+
+Outputs:
+  SNSTopicArn:
+    Description: "SNS Topic ARN for license alerts"
+    Value: !Ref LicenseAlertsTopic
+    Export:
+      Name: LicenseAlertsTopicARN

@@ -1,0 +1,17 @@
+# AWS
+*.zip
+.env
+.aws-sam/
+
+# Python
+__pycache__/
+*.pyc
+.python_packages/
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/

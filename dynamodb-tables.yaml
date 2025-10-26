@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DynamoDB tables for License Management App
+
+Resources:
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: users
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: username
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: username-index
+          KeySchema:
+            - AttributeName: username
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  LicensesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: licenses
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: license_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: license_id
+          KeyType: HASH
+
+Outputs:
+  UsersTableName:
+    Description: "Users Table Name"
+    Value: !Ref UsersTable
+  LicensesTableName:
+    Description: "Licenses Table Name" 
+    Value: !Ref LicensesTable
