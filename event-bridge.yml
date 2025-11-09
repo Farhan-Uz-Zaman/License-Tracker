@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EventBridge Rule for License Expiration Checks
+
+Resources:
+  LicenseExpirationRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Daily license expiration check at 10:15 AM Bangladesh time"
+      Name: license-expiration-check
+      ScheduleExpression: "cron(15 4 * * ? *)"  # 10:15 AM Bangladesh (UTC+6)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt BILicenseTracker.Arn
+          Id: LicenseTrackerTarget
+
+  BILicenseTracker:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: BILicenseTracker
+      # Add your Lambda properties here (code, runtime, handler, role, etc.)
+      # ... (copy from your existing Lambda configuration)
+
+  EventBridgePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref BILicenseTracker
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt LicenseExpirationRule.Arn
+
+Outputs:
+  EventBridgeRuleName:
+    Description: "EventBridge Rule Name"
+    Value: !Ref LicenseExpirationRule
+  LambdaFunctionName:
+    Description: "Lambda Function Name"
+    Value: !Ref license_tracker

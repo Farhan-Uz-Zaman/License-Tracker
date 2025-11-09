@@ -1,0 +1,277 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: API Gateway for License Management App
+
+Resources:
+  # API Gateway
+  LicenseManagementAPI:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: license-management-api
+      Description: API for License Management Application
+
+  # API Resources
+  AuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !GetAtt LicenseManagementAPI.RootResourceId
+      PathPart: auth
+
+  DashboardResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !GetAtt LicenseManagementAPI.RootResourceId
+      PathPart: dashboard
+
+  LicensesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !GetAtt LicenseManagementAPI.RootResourceId
+      PathPart: licenses
+
+  LicenseIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !Ref LicensesResource
+      PathPart: '{license_id}'
+
+  AdminResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !GetAtt LicenseManagementAPI.RootResourceId
+      PathPart: admin
+
+  AdminLicensesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !Ref AdminResource
+      PathPart: licenses
+
+  AdminLicenseIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !Ref AdminLicensesResource
+      PathPart: '{license_id}'
+
+  AdminUsersResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !Ref AdminResource
+      PathPart: users
+
+  AdminUserIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !Ref AdminUsersResource
+      PathPart: '{user_id}'
+
+  PromoteResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !Ref AdminUserIdResource
+      PathPart: promote
+
+  TransferAdminResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ParentId: !Ref AdminUserIdResource
+      PathPart: transfer_admin
+
+  # API Methods
+  AuthPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ResourceId: !Ref AuthResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthHandlerArn}/invocations
+
+  DashboardGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ResourceId: !Ref DashboardResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DashboardLambdaArn}/invocations
+
+  LicensesPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ResourceId: !Ref LicensesResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LicenseManagerArn}/invocations
+
+  LicensePutMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ResourceId: !Ref LicenseIdResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LicenseManagerArn}/invocations
+
+  AdminLicenseDeleteMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ResourceId: !Ref AdminLicenseIdResource
+      HttpMethod: DELETE
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminHandlerArn}/invocations
+
+  AdminUserDeleteMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ResourceId: !Ref AdminUserIdResource
+      HttpMethod: DELETE
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminHandlerArn}/invocations
+
+  PromotePostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ResourceId: !Ref PromoteResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminHandlerArn}/invocations
+
+  TransferAdminPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      ResourceId: !Ref TransferAdminResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminHandlerArn}/invocations
+
+  # API Gateway Deployment
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - AuthPostMethod
+      - DashboardGetMethod
+      - LicensesPostMethod
+      - LicensePutMethod
+      - AdminLicenseDeleteMethod
+      - AdminUserDeleteMethod
+      - PromotePostMethod
+      - TransferAdminPostMethod
+    Properties:
+      RestApiId: !Ref LicenseManagementAPI
+      StageName: prod
+
+  # Lambda Permissions for API Gateway
+  AuthLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AuthHandlerArn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub ${LicenseManagementAPI}/*/POST/auth
+
+  DashboardLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DashboardLambdaArn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub ${LicenseManagementAPI}/*/GET/dashboard
+
+  LicenseManagerLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LicenseManagerArn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub ${LicenseManagementAPI}/*/POST/licenses
+
+  LicenseManagerPutPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LicenseManagerArn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub ${LicenseManagementAPI}/*/PUT/licenses/*
+
+  AdminLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminHandlerArn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub ${LicenseManagementAPI}/*/DELETE/admin/*
+
+  AdminPromotePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminHandlerArn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub ${LicenseManagementAPI}/*/POST/admin/*/promote
+
+  AdminTransferPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminHandlerArn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub ${LicenseManagementAPI}/*/POST/admin/*/transfer_admin
+
+Parameters:
+  AuthHandlerArn:
+    Type: String
+    Description: ARN of the auth_handler Lambda function
+  DashboardLambdaArn:
+    Type: String
+    Description: ARN of the dashboard_lambda Lambda function
+  LicenseManagerArn:
+    Type: String
+    Description: ARN of the license_manager Lambda function
+  AdminHandlerArn:
+    Type: String
+    Description: ARN of the admin_handler Lambda function
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway URL"
+    Value: !Sub "https://${LicenseManagementAPI}.execute-api.${AWS::Region}.amazonaws.com/prod"
