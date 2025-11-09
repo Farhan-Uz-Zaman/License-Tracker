@@ -30,7 +30,6 @@ def check_expirations():
     print(f"[{datetime.now()}] Running expiration check...")
     today = datetime.today().date()
     
-    # Initialize DynamoDB
     dynamodb = boto3.resource('dynamodb')
     licenses_table = dynamodb.Table('licenses')
     
@@ -46,24 +45,28 @@ def check_expirations():
             try:
                 name = license.get('name')
                 expiry_str = license.get('expiry_date')
-                email = license.get('email')
-                owner = license.get('owner_name', 'Unknown')
+                primary_email = license.get('primary_email')
+                primary_owner = license.get('primary_owner', 'Unknown')
+                secondary_email = license.get('secondary_email')
+                secondary_owner = license.get('secondary_owner', 'Unknown')
 
-                if not expiry_str:
+                if not expiry_str or not primary_email:
                     continue
                     
                 expiry = datetime.strptime(expiry_str, "%Y-%m-%d").date()
                 days_left = (expiry - today).days
                 print(f"Evaluating: {name} — {expiry} — {days_left} days left")
                 
-                if days_left in [45, 30, 15, 7, 1]:
-                    # Send SNS notification
-                    sns_sent = send_sns_notification(name, expiry, days_left, owner, email)
+                if days_left in [60, 45, 30] or days_left < 28:
+                    # Notify both owners
+                    primary_sent = send_sns_notification(name, expiry, days_left, primary_owner, primary_email)
+                    secondary_sent = False
+                    if secondary_email:
+                        secondary_sent = send_sns_notification(name, expiry, days_left, secondary_owner, secondary_email)
                     
-                    # Send Teams alert
-                    teams_sent = send_teams_message(name, expiry, days_left, owner)
-                    
-                    if sns_sent or teams_sent:
+                    teams_sent = send_teams_message(name, expiry, days_left, primary_owner)
+
+                    if primary_sent or secondary_sent or teams_sent:
                         notified_count += 1
                     
                     print(f"Notified for {name}: {days_left} days left")
@@ -82,34 +85,48 @@ def check_expirations():
 
 def send_sns_notification(name, expiry, days_left, owner, email):
     sns = boto3.client('sns')
-    topic_arn = os.getenv("SNS_TOPIC_ARN")
     
-    if not topic_arn:
-        print("SNS_TOPIC_ARN not configured")
+    topic_name = f"user_topic_{email.replace('@', '_').replace('.', '_')}"
+    
+    try:
+        topic_arn = sns.create_topic(Name=topic_name)['TopicArn']
+    except Exception as e:
+        print(f"Error creating topic: {e}")
         return False
-        
+
+    try:
+        sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol='email',
+            Endpoint=email
+        )
+        print(f"Subscribed {email} to topic {topic_name}")
+    except Exception as e:
+        if "already subscribed" in str(e).lower():
+            print(f"{email} already subscribed")
+        else:
+            print(f"Subscription error: {e}")
+
     message = f"""
-🔔 **License Alert**
+🔔 License Alert
 
-📄 **{name}** expires in **{days_left} days**
-
-📅 **Expiry Date:** {expiry}
-👤 **Owner:** {owner}
-📧 **Contact:** {email}
+📄 {name} expires in {days_left} days
+📅 Expiry Date: {expiry}
+👤 Owner: {owner}
+📧 Contact: {email}
 
 Please renew this license as soon as possible to avoid disruption.
 """
-    
     try:
         response = sns.publish(
             TopicArn=topic_arn,
             Message=message,
             Subject=f"🚨 License '{name}' expires in {days_left} days"
         )
-        print(f"SNS notification sent: {response['MessageId']}")
+        print(f"Notification sent to {email}: {response['MessageId']}")
         return True
     except Exception as e:
-        print(f"SNS error: {e}")
+        print(f"Publish error: {e}")
         return False
 
 def send_teams_message(name, expiry, days_left, owner):

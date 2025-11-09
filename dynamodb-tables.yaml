@@ -31,14 +31,32 @@ Resources:
       AttributeDefinitions:
         - AttributeName: license_id
           AttributeType: S
+        # Optional: define these if you plan to index or query them
+        - AttributeName: primary_email
+          AttributeType: S
+        - AttributeName: secondary_email
+          AttributeType: S
       KeySchema:
         - AttributeName: license_id
           KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: primary_email-index
+          KeySchema:
+            - AttributeName: primary_email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: secondary_email-index
+          KeySchema:
+            - AttributeName: secondary_email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
 
 Outputs:
   UsersTableName:
     Description: "Users Table Name"
     Value: !Ref UsersTable
   LicensesTableName:
-    Description: "Licenses Table Name" 
+    Description: "Licenses Table Name"
     Value: !Ref LicensesTable

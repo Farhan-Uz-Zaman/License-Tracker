@@ -65,7 +65,7 @@ def promote_user(event):
 
         all_users = users_table.scan().get('Items', [])
         admin_count = sum(1 for u in all_users if u.get('role') == 'admin')
-        if admin_count >= 2:
+        if admin_count >= 3:
             return json_response({'error': 'Maximum number of admins reached'}, 403)
 
         users_table.update_item(

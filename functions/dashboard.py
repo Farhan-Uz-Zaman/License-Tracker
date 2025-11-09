@@ -5,10 +5,8 @@ from datetime import datetime
 def lambda_handler(event, context):
     print("Dashboard Lambda starting...")
 
-    # Normalize headers to lowercase
     headers = {k.lower(): v for k, v in event.get('headers', {}).items()}
 
-    # Handle preflight OPTIONS request
     if event.get('httpMethod') == 'OPTIONS':
         return {
             'statusCode': 200,
@@ -17,7 +15,6 @@ def lambda_handler(event, context):
         }
 
     try:
-        # Initialize DynamoDB
         dynamodb = boto3.resource('dynamodb')
         licenses_table = dynamodb.Table('licenses')
         users_table = dynamodb.Table('users')
@@ -40,7 +37,6 @@ def handle_dashboard(headers, licenses_table, users_table, event):
     query_params = event.get('queryStringParameters', {}) or {}
     query = query_params.get('query', '').strip().lower()
 
-    # Get licenses
     try:
         response = licenses_table.scan()
         all_licenses = response.get('Items', [])
@@ -48,16 +44,17 @@ def handle_dashboard(headers, licenses_table, users_table, event):
     except Exception as e:
         return json_response({'error': f'DynamoDB scan error (licenses): {str(e)}'}, 500)
 
-    # Filter licenses if query provided
+    # Filter licenses by name or either owner's name
     if query:
         licenses = [
             lic for lic in all_licenses
-            if query in lic.get('name', '').lower() or query in lic.get('owner_name', '').lower()
+            if query in lic.get('name', '').lower()
+            or query in lic.get('primary_owner', '').lower()
+            or query in lic.get('secondary_owner', '').lower()
         ]
     else:
         licenses = all_licenses
 
-    # Calculate expiring soon
     today = datetime.today().date()
     expiring_soon = 0
     for lic in licenses:
@@ -69,7 +66,6 @@ def handle_dashboard(headers, licenses_table, users_table, event):
         except ValueError:
             continue
 
-    # Get users
     try:
         users_response = users_table.scan()
         all_users = users_response.get('Items', [])
@@ -78,7 +74,6 @@ def handle_dashboard(headers, licenses_table, users_table, event):
         return json_response({'error': f'DynamoDB scan error (users): {str(e)}'}, 500)
 
     current_username = headers.get('x-username', '')
-
     users = [user for user in all_users if user.get('username') != current_username]
     admin_count = sum(1 for user in all_users if user.get('role') == 'admin')
 

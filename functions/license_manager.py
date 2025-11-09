@@ -71,11 +71,16 @@ def add_license(event):
         body = json.loads(event['body'])
         name = body['license_name'].strip()
         expiry = body['expiry_date'].strip()
-        email = body['owner_email'].strip()
-        owner_name = body['owner_name'].strip()
+        primary_email = body['primary_owner_email'].strip()
+        primary_owner = body['primary_owner_name'].strip()
+        secondary_email = body['secondary_owner_email'].strip()
+        secondary_owner = body['secondary_owner_name'].strip()
 
-        if not is_valid_email(email):
-            return json_response({'error': 'Invalid email format'}, 400)
+        # Validate emails and date
+        if not is_valid_email(primary_email):
+            return json_response({'error': 'Invalid primary email format'}, 400)
+        if not is_valid_email(secondary_email):
+            return json_response({'error': 'Invalid secondary email format'}, 400)
         if not is_valid_date(expiry):
             return json_response({'error': 'Invalid date format'}, 400)
 
@@ -85,8 +90,10 @@ def add_license(event):
             'license_id': license_id,
             'name': name,
             'expiry_date': expiry,
-            'email': email,
-            'owner_name': owner_name,
+            'primary_email': primary_email,
+            'primary_owner': primary_owner,
+            'secondary_email': secondary_email,
+            'secondary_owner': secondary_owner,
             'created_by': current_user_id,
             'created_by_username': current_username,
             'created_at': datetime.now().isoformat()
