@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.15.0rc1-slim-bookworm
 
 # Set timezone to Bangladesh
 ENV TZ=Asia/Dhaka
