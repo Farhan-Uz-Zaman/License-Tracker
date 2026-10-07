@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+api-gw.yml
+dynamodb-tables.yaml
+event-bridge.yml
+SNS.yml
+README.md
+functions
+amplify
+docker-compose.yml
+Dockerfile
+**/.app.py.swo

@@ -1,1 +1,4 @@
 .env
+app/licenses.db
+*.swo
+__pycache__/

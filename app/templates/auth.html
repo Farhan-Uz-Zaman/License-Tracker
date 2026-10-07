@@ -1,141 +1,416 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Login / Signup - License Tracker</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      background-color: #f2f2f2;
-    }
-    .container {
-      max-width: 400px;
-      margin: auto;
-      background-color: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      position: relative;
-    }
-    img.logo {
-      display: block;
-      margin: 0 auto 20px;
-      height: 60px;
-    }
-    h2 {
-      text-align: center;
-      color: #333;
-    }
-    .tabs {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 20px;
-    }
-    .tabs button {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      background-color: #eee;
-      cursor: pointer;
-    }
-    .tabs button.active {
-      background-color: #007BFF;
-      color: white;
-    }
-    .form-section {
-      display: none;
-    }
-    .form-section.active {
-      display: block;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button.submit {
-      width: 100%;
-      padding: 10px;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .error {
-      color: red;
-      text-align: center;
-      margin-top: 10px;
-    }
-    footer {
-      position: fixed;
-      bottom: 10px;
-      right: 20px;
-      font-size: 0.8em;
-      color: #D10074;
-    }
-  </style>
-  <script>
-    function showForm(formId) {
-      document.getElementById('login-form').classList.remove('active');
-      document.getElementById('signup-form').classList.remove('active');
-      document.getElementById(formId).classList.add('active');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login / Signup - License Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0e27;
+    --bg-mid: #131836;
+    --text-primary: #f5f7fb;
+    --text-muted: rgba(245, 247, 251, 0.62);
+    --accent: #6ee7ff;
+    --accent-2: #a78bfa;
+    --accent-3: #ff9ecf;
+    --glass-bg: rgba(255, 255, 255, 0.07);
+    --glass-bg-strong: rgba(255, 255, 255, 0.13);
+    --glass-border: rgba(255, 255, 255, 0.22);
+    --error: #ff8a9c;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
 
-      document.getElementById('login-tab').classList.remove('active');
-      document.getElementById('signup-tab').classList.remove('active');
-      document.getElementById(formId + '-tab').classList.add('active');
-    }
+  * { box-sizing: border-box; }
 
-    window.onload = function() {
-      showForm('login-form');
-    };
-  </script>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px 84px;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    background:
+      radial-gradient(circle at 15% 20%, #2b1a5e 0%, transparent 45%),
+      radial-gradient(circle at 85% 15%, #0e3a5e 0%, transparent 50%),
+      radial-gradient(circle at 50% 90%, #1a2f5e 0%, transparent 55%),
+      linear-gradient(160deg, var(--bg-deep) 0%, var(--bg-mid) 45%, var(--bg-deep) 100%);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.5;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .blob-a { width: 420px; height: 420px; background: radial-gradient(circle, var(--accent) 0%, transparent 70%); top: -120px; left: -100px; animation: drift1 18s ease-in-out infinite; }
+  .blob-b { width: 380px; height: 380px; background: radial-gradient(circle, var(--accent-2) 0%, transparent 70%); bottom: -140px; right: -100px; animation: drift2 22s ease-in-out infinite; }
+
+  @keyframes drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,50px) scale(1.08); } }
+  @keyframes drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-50px,-30px) scale(1.06); } }
+
+  @media (prefers-reduced-motion: reduce) { .blob { animation: none; } }
+
+  .auth-shell {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    width: 100%;
+    max-width: 920px;
+    border-radius: 24px;
+    overflow: hidden;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255,255,255,0.12);
+    animation: riseIn 0.5s ease;
+  }
+
+  @keyframes riseIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  /* Brand panel */
+  .hero {
+    position: relative;
+    padding: 56px 46px;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background:
+      radial-gradient(140% 120% at 12% 0%, rgba(255,255,255,.08), transparent 55%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.04) 0 2px, transparent 2px 26px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,.03) 0 2px, transparent 2px 26px),
+      linear-gradient(160deg, rgba(110,231,255,0.16), rgba(167,139,250,0.18) 70%);
+    border-right: 1px solid var(--glass-border);
+  }
+
+  .hero-org {
+    margin: 0 0 18px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+
+
+  .hero-title {
+  margin: 0 0 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  line-height: 1.08;
+}
+
+  .hero-copy {
+    margin: 0;
+    max-width: 34ch;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  /* Auth card */
+  .auth-card { padding: 48px 44px; position: relative; }
+
+  .logo {
+    display: block;
+    height: 30px;
+    margin-bottom: 28px;
+    filter: brightness(0) invert(1) drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+    opacity: 0.92;
+  }
+
+  .tabs {
+    position: relative;
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 28px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+  }
+
+  .tab-indicator {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    transition: transform 0.32s cubic-bezier(.65,0,.35,1);
+    z-index: 1;
+  }
+
+  .tabs.signup-active .tab-indicator { transform: translateX(100%); }
+
+  .tabs button {
+    flex: 1;
+    position: relative;
+    z-index: 2;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    font: 600 0.92rem/1 var(--font-sans);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .tabs button.active { color: #0a0e27; }
+
+  .tabs button:focus-visible,
+  button.submit:focus-visible,
+  input:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(110,231,255,0.25), 0 0 0 1px var(--accent);
+  }
+
+  .form-section { display: none; }
+  .form-section.active { display: block; animation: fadeSlide 0.35s ease; }
+
+  @keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .title-glass { position: relative; display: inline-block; margin: 0 0 6px; }
+
+  .glass-blob {
+    position: absolute;
+    top: -26px;
+    left: -18px;
+    width: 170px;
+    height: 92px;
+    background:
+      radial-gradient(circle at 28% 30%, rgba(110,231,255,.5), transparent 50%),
+      radial-gradient(circle at 74% 68%, rgba(167,139,250,.45), transparent 60%),
+      radial-gradient(circle at 50% 88%, rgba(255,158,207,.28), transparent 65%);
+    filter: blur(26px);
+    z-index: 0;
+  }
+
+  .form-title {
+    position: relative;
+    z-index: 1;
+    display: inline-block;
+    margin: 0;
+    padding: 9px 20px;
+    border-radius: 20px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255,255,255,.28);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.2),
+      inset 0 -8px 12px -8px rgba(110,231,255,.15),
+      0 10px 26px -14px rgba(0,0,0,.5);
+    overflow: hidden;
+  }
+
+  .form-title::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(120deg, rgba(255,255,255,.25) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 65%, rgba(255,255,255,.12) 100%);
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+
+  .form-subtitle { margin: 0 0 26px; color: var(--text-muted); font-size: 0.92rem; }
+
+  .field { margin-bottom: 18px; }
+
+  .field-label { display: block; margin-bottom: 6px; font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+
+  input[type="text"],
+  input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    font: 400 0.95rem var(--font-sans);
+    color: var(--text-primary);
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  input::placeholder { color: rgba(245,247,251,0.38); }
+
+  input:focus {
+    border-color: var(--accent);
+    background: rgba(255,255,255,0.1);
+  }
+
+  .field-hint { margin: 6px 0 0; font-size: 0.78rem; color: var(--text-muted); }
+
+  button.submit {
+    width: 100%;
+    margin-top: 6px;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #0a0e27;
+    font: 600 0.95rem var(--font-sans);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 4px 18px rgba(110,231,255,0.22);
+  }
+
+  button.submit:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(110,231,255,0.32); }
+  button.submit:active { transform: translateY(0); }
+
+  .error { min-height: 20px; margin-top: 14px; font-size: 0.85rem; color: var(--error); text-align: center; }
+
+  footer {
+    position: fixed;
+    right: 20px;
+    bottom: 16px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    z-index: 1;
+  }
+
+  @media (max-width: 840px) {
+    .hero { display: none; }
+    .auth-shell { grid-template-columns: 1fr; max-width: 420px; }
+    .auth-card { padding: 40px 28px; }
+  }
+
+  @media (max-width: 480px) {
+    footer { position: static; text-align: center; margin-top: 20px; }
+    body { padding-bottom: 32px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-shell, .form-section.active { animation: none; }
+  }
+</style>
 </head>
 <body>
 
-  <div class="container">
-    <img src="/static/logo.png" alt="BRAC Logo" class="logo">
-    <h2>License Tracker</h2>
+<div class="blob blob-a"></div>
+<div class="blob blob-b"></div>
 
-    <div class="tabs">
-      <button id="login-tab" class="active" onclick="showForm('login-form')">Login</button>
-      <button id="signup-tab" onclick="showForm('signup-form')">Signup</button>
+<div class="auth-shell">
+  <aside class="hero">
+    <p class="hero-org">Cynetrix</p>
+    <h1 class="hero-title">License Tracker</h1>
+    <p class="hero-copy">Keep every software license accounted for, renewed, and compliant.</p>
+  </aside>
+
+  <main class="auth-card">
+    <img src="/static/logo.png" alt="Company Logo" class="logo">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="error" style="margin-bottom:16px;">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="tabs" id="tabs">
+      <div class="tab-indicator"></div>
+      <button id="login-tab" class="active" onclick="showForm('login-form')">Log in</button>
+      <button id="signup-tab" onclick="showForm('signup-form')">Sign up</button>
     </div>
 
-    <!-- Login Form -->
     <div id="login-form" class="form-section active">
+      <div class="title-glass">
+        <span class="glass-blob" aria-hidden="true"></span>
+        <h2 class="form-title">Welcome back</h2>
+      </div>
+      <p class="form-subtitle">Sign in to manage your license inventory.</p>
+
       <form method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
+        <div class="field">
+          <label class="field-label" for="login-username">Username</label>
+          <input type="text" id="login-username" name="username" placeholder="Enter your username" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label class="field-label" for="login-password">Password</label>
+          <input type="password" id="login-password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+        </div>
         <input type="hidden" name="action" value="login">
-        <button type="submit" class="submit">Login</button>
+        <button type="submit" class="submit">Log in</button>
       </form>
       {% if error and source == 'login' %}
         <div class="error">{{ error }}</div>
       {% endif %}
     </div>
 
-    <!-- Signup Form -->
     <div id="signup-form" class="form-section">
+      <div class="title-glass">
+        <span class="glass-blob" aria-hidden="true"></span>
+        <h2 class="form-title">Create an account</h2>
+      </div>
+      <p class="form-subtitle">Set up access to start tracking licenses.</p>
+
       <form method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <input type="text" name="username" placeholder="Choose a Username" required>
-        <input type="password" name="password" placeholder="Choose a Password" required>
+        <div class="field">
+          <label class="field-label" for="signup-username">Username</label>
+          <input type="text" id="signup-username" name="username" placeholder="Choose a username" required autocomplete="username">
+          <p class="field-hint">Use your email address (e.g. name@company.com).</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="signup-password">Password</label>
+          <input type="password" id="signup-password" name="password" placeholder="Choose a password" required autocomplete="new-password">
+          <p class="field-hint">At least 6 characters.</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="signup-confirm-password">Confirm password</label>
+          <input type="password" id="signup-confirm-password" name="confirm_password" placeholder="Re-enter your password" required autocomplete="new-password">
+        </div>
         <input type="hidden" name="action" value="signup">
-        <button type="submit" class="submit">Signup</button>
+        <button type="submit" class="submit">Create account</button>
       </form>
       {% if error and source == 'signup' %}
         <div class="error">{{ error }}</div>
       {% endif %}
     </div>
-  </div>
+  </main>
+</div>
 
-  <footer>
-    Developed by Farhan Uz Zaman
-  </footer>
+<footer>Developed by Farhan Uz Zaman</footer>
 
-</body> 
+<script>
+  function showForm(formId) {
+    var tabId = (formId === 'signup-form') ? 'signup-tab' : 'login-tab';
+
+    document.getElementById('login-form').classList.remove('active');
+    document.getElementById('signup-form').classList.remove('active');
+    document.getElementById(formId).classList.add('active');
+
+    document.getElementById('login-tab').classList.remove('active');
+    document.getElementById('signup-tab').classList.remove('active');
+    document.getElementById(tabId).classList.add('active');
+
+    document.getElementById('tabs').classList.toggle('signup-active', formId === 'signup-form');
+  }
+
+  window.onload = function () { showForm('login-form'); };
+</script>
+
+</body>
 </html>

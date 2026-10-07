@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -14,7 +15,8 @@ from flask_wtf.csrf import CSRFError, CSRFProtect, generate_csrf
 
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # Replace with a secure key
+# Secret key comes from the environment (see .env); fallback only for quick local testing
+app.secret_key = os.getenv("SECRET_KEY", "dev-only-insecure-secret")
 
 # Enable CSRF protection
 csrf = CSRFProtect(app)
@@ -24,9 +26,13 @@ csrf = CSRFProtect(app)
 def handle_csrf_error(e):
     return render_template('csrf_error.html', reason=e.description), 400
 
+# All database access happens from the directory containing this file
+# (overridable with DB_PATH), so it stays consistent inside the container
+DB_PATH = os.getenv("DB_PATH") or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'licenses.db')
+
 # Initialize database
 def init_db():
-    conn = sqlite3.connect('licenses.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS licenses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,6 +40,8 @@ def init_db():
         expiry_date TEXT,
         email TEXT,
         owner_name TEXT,
+        owner_name_2 TEXT,
+        email_2 TEXT,
         last_updated_by TEXT,
         last_updated_on TEXT
     )''')
@@ -43,6 +51,12 @@ def init_db():
         password TEXT,
         role TEXT
     )''')
+    # One-time migration: older databases only have the single owner columns
+    for col in ('owner_name_2', 'email_2'):
+        try:
+            c.execute(f"ALTER TABLE licenses ADD COLUMN {col} TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
     conn.commit()
     conn.close()
 
@@ -64,26 +78,13 @@ def is_valid_date(date_str):
 
 # Input validation helpers
 def is_valid_email(email):
-    return re.match(r"[^@]+@[^@]+\.[^@]+", email)
-
-    return username and len(username) >= 3 and re.match(r"^\w+$", username)
-
-def is_valid_password(password):
-    return password and len(password) >= 6
-
-def is_valid_date(date_str):
-    try:
-        datetime.strptime(date_str, "%Y-%m-%d")
-        return True
-    except ValueError:
-        return False
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email) is not None
 
 # Email reminders
 def send_email(to, subject, body):
     sender = os.getenv("EMAIL_USER")
     password = os.getenv("EMAIL_PASS")
-    print(f"EMAIL_USER: {sender}")
-    print(f"EMAIL_PASS: {'SET' if password else 'NOT SET'}")
+    print(f"Email credentials: {'SET' if sender and password else 'NOT SET'}")
     print(f"Attempting to send email to {to} with subject: {subject}")
     msg = MIMEText(body)
     msg['Subject'] = subject
@@ -131,28 +132,30 @@ def admin_required(f):
 def check_expirations():
     print(f"[{datetime.now()}] Running expiration check...")
     today = datetime.today().date()
-    conn = sqlite3.connect('licenses.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT name, expiry_date, email, owner_name FROM licenses")
-    for name, expiry_str, email, owner in c.fetchall():
+    c.execute("SELECT name, expiry_date, email, email_2, owner_name, owner_name_2 FROM licenses")
+    for name, expiry_str, email, email_2, owner, owner_2 in c.fetchall():
         try:
             expiry = datetime.strptime(expiry_str, "%Y-%m-%d").date()
             days_left = (expiry - today).days
             print(f"Evaluating: {name} — {expiry} — {days_left} days left")
             if days_left in [45, 30, 15, 7, 1]:
-                # Email (if SMTP works)
-                send_email(
-                    email,
-                    f"License '{name}' expires in {days_left} days",
-                    f"Your license '{name}' expires on {expiry}. Please renew."
-                )
+                # Email every owner who has an address on file
+                recipients = [e for e in (email, email_2) if e]
+                for recipient in recipients:
+                    send_email(
+                        recipient,
+                        f"License '{name}' expires in {days_left} days",
+                        f"Your license '{name}' expires on {expiry}. Please renew."
+                    )
 
                 # Teams alert
                 send_teams_message(
                     name=name,
                     expiry=expiry,
                     days_left=days_left,
-                    owner=owner or "Unknown"
+                    owner=owner or "Unknown",
                 )
         except Exception as e:
             print(f"Reminder error: {e}")
@@ -176,13 +179,16 @@ def auth():
         action = request.form['action']
         username = request.form['username'].strip()
         password = request.form['password'].strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
 
         if not is_valid_username(username):
-            return render_template('auth.html', error="Invalid username", source=action, csrf_token=generate_csrf())
+            return render_template('auth.html', error="Invalid username — please use your email address", source=action, csrf_token=generate_csrf())
         if not is_valid_password(password):
-            return render_template('auth.html', error="Invalid password", source=action, csrf_token=generate_csrf())
+            return render_template('auth.html', error="Invalid password — must be at least 6 characters", source=action, csrf_token=generate_csrf())
+        if action == 'signup' and password != confirm_password:
+            return render_template('auth.html', error="Passwords do not match", source="signup", csrf_token=generate_csrf())
 
-        conn = sqlite3.connect('licenses.db')
+        conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
 
         if action == 'signup':
@@ -190,7 +196,7 @@ def auth():
             count = c.fetchone()[0]
             role = 'admin' if count == 0 else 'general'
             try:
-                c.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (username, password, role))
+                c.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", (username, generate_password_hash(password), role))
                 conn.commit()
                 conn.close()
                 return redirect('/auth')
@@ -206,7 +212,9 @@ def auth():
 
             if user_record:
                 db_username, db_password, db_role = user_record
-                if password == db_password:
+                # check_password_hash handles hashed passwords; the fallback
+                # supports accounts created before hashing was introduced
+                if check_password_hash(db_password, password) or password == db_password:
                     session['user'] = db_username  # use stored username
                     session['role'] = db_role
                     return redirect('/dashboard')
@@ -228,11 +236,14 @@ def dashboard():
         return redirect('/auth')
 
     query = request.args.get('query', '').strip().lower()
-    conn = sqlite3.connect('licenses.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     if query:
-        c.execute("SELECT * FROM licenses WHERE LOWER(name) LIKE ? OR LOWER(owner_name) LIKE ?", (f'%{query}%', f'%{query}%'))
+        c.execute(
+            "SELECT * FROM licenses "
+            "WHERE LOWER(name) LIKE ? OR LOWER(owner_name) LIKE ? OR LOWER(owner_name_2) LIKE ?",
+            (f'%{query}%', f'%{query}%', f'%{query}%'))
     else:
         c.execute("SELECT * FROM licenses")
     licenses = c.fetchall()
@@ -270,15 +281,22 @@ def add():
     expiry = request.form['expiry_date'].strip()
     email = request.form['owner_email'].strip()
     owner_name = request.form['owner_name'].strip()
+    owner_name_2 = request.form.get('owner_name_2', '').strip()
+    email_2 = request.form.get('owner_email_2', '').strip()
 
     if not is_valid_email(email):
         return "Invalid email format", 400
+    if email_2 and not is_valid_email(email_2):
+        return "Invalid secondary email format", 400
     if not is_valid_date(expiry):
         return "Invalid date format", 400
 
-    conn = sqlite3.connect('licenses.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO licenses (name, expiry_date, email, owner_name) VALUES (?, ?, ?, ?)", (name, expiry, email, owner_name))
+    c.execute(
+        "INSERT INTO licenses (name, expiry_date, email, owner_name, owner_name_2, email_2) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (name, expiry, email, owner_name, owner_name_2, email_2))
     conn.commit()
     conn.close()
     return redirect('/dashboard')
@@ -293,7 +311,7 @@ def update(license_id):
     if not is_valid_date(new_expiry):
         return "Invalid date format", 400
 
-    conn = sqlite3.connect('licenses.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     c.execute("SELECT id FROM licenses WHERE id = ?", (license_id,))
@@ -320,7 +338,7 @@ def delete(license_id):
     if 'user' not in session:
         return redirect('/auth')
 
-    conn = sqlite3.connect('licenses.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     c.execute("SELECT id FROM licenses WHERE id = ?", (license_id,))
@@ -343,7 +361,7 @@ def promote(username):
     if not is_valid_username(username):
         return "Invalid username", 400
 
-    conn = sqlite3.connect('licenses.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     c.execute("SELECT username FROM users WHERE username = ?", (username,))
@@ -373,7 +391,7 @@ def transfer_admin(username):
     if not is_valid_username(username):
         return "Invalid username", 400
 
-    conn = sqlite3.connect('licenses.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     c.execute("SELECT username FROM users WHERE username = ?", (username,))
@@ -401,7 +419,7 @@ def delete_user(username):
     if not is_valid_username(username):
         return "Invalid username", 400
 
-    conn = sqlite3.connect('licenses.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     c.execute("SELECT username FROM users WHERE username = ?", (username,))
