@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings - License Tracker</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">License Tracker</div>
+        <ul class="nav-links">
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/admin">Admin Settings</a></li>
+            <li><a href="/users">Users</a></li>
+            <li><a href="/teams">Teams</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <!-- Admin Settings Page -->
+        <section id="admin-settings" class="admin-section">
+            <h1>Admin Settings</h1>
+            <form method="post" action="/admin/settings">
+                <div class="form-group">
+                    <label for="email-user">Primary Email Address</label>
+                    <input type="email" id="email-user" name="email_user" placeholder="admin@example.com" value="admin@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email-pass">SMTP Password</label>
+                    <input type="password" id="email_pass" name="email_pass" placeholder="Enter SMTP password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="smtp-host">SMTP Host</label>
+                    <input type="text" id="smtp_host" name="smtp_host" value="smtp.gmail.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="smtp-port">SMTP Port</label>
+                    <input type="number" id="smtp_port" name="smtp_port" value="587">
+                </div>
+                
+                <div class="form-group">
+                    <label for="teams-webhook">Teams Webhook URL</label>
+                    <input type="url" id="teams_webhook" name="teams_webhook" value="">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Save Settings</button>
+            </form>
+        </section>
+    </main>
+
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

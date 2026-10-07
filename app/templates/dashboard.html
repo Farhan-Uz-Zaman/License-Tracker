@@ -204,6 +204,7 @@
   .license-owner { font-size: 0.88rem; color: var(--text-muted); line-height: 1.4; }
   .owner-role { font-size: 0.78rem; font-weight: 600; color: var(--text-primary); margin-right: 6px; }
   .license-meta { font-size: 0.8rem; color: var(--text-muted); font-style: italic; margin-top: 8px; }
+  .license-purpose { font-size: 0.86rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
 
   .license-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
 
@@ -311,7 +312,7 @@
         <div class="summary-label">Summary</div>
         <div class="summary-grid">
           <div class="summary-item">
-            <span class="summary-value">{{ licenses|length }}</span>
+            <span class="summary-value">{{ total_licenses }}</span>
             <span class="summary-key">Total licenses</span>
           </div>
           <div class="summary-item">
@@ -341,6 +342,16 @@
         </div>
         <div class="field-row">
           <div class="field">
+            <label for="add-license-count">Number of licenses</label>
+            <input type="number" id="add-license-count" name="license_count" min="1" value="1" required>
+          </div>
+          <div class="field">
+            <label for="add-purpose">Purpose</label>
+            <input type="text" id="add-purpose" name="purpose" maxlength="300" placeholder="e.g. Design team collaboration" required>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
             <label for="add-owner-name">Primary owner name</label>
             <input type="text" id="add-owner-name" name="owner_name" placeholder="e.g. Jane Smith" required>
           </div>
@@ -364,8 +375,9 @@
     </div>
 
     <form method="GET" action="/dashboard" class="search-form">
-      <input type="text" name="query" placeholder="Search by license or owner name" value="{{ query }}">
+      <input type="text" name="query" placeholder="Search by license, owner or purpose" value="{{ query }}">
       <button type="submit" class="btn-ghost">Search</button>
+      <a href="/export{% if query %}?query={{ query }}{% endif %}" class="btn-ghost" style="text-decoration:none;">Export CSV</a>
     </form>
 
     <h2 class="section-title">Tracked licenses</h2>
@@ -375,8 +387,12 @@
           <li class="license-card">
             <div class="license-main">
               <strong class="license-name">{{ license[1] }}</strong>
-              <span class="license-expiry">Expires {{ license[2] }}</span>
+              <span class="license-expiry">Expires {{ license[2] }} · {{ license[9] if license[9] is not none else 1 }} {% if (license[9] if license[9] is not none else 1) == 1 %}license{% else %}licenses{% endif %}</span>
             </div>
+
+            {% if license[10] %}
+              <div class="license-purpose">{{ license[10] }}</div>
+            {% endif %}
 
             <div class="license-owners">
               <div class="license-owner"><span class="owner-role">Primary</span>{{ license[4] }}{% if license[3] %} ({{ license[3] }}){% endif %}</div>
@@ -410,6 +426,24 @@
       </ul>
     {% else %}
       <p class="empty-state">No licenses found.</p>
+    {% endif %}
+
+    {% if total_pages > 1 %}
+      <div class="pagination" style="display:flex;gap:8px;align-items:center;justify-content:center;margin:20px 0;">
+        {% if page > 1 %}
+          <a href="/dashboard?page={{ page - 1 }}{% if query %}&query={{ query }}{% endif %}" class="btn-ghost" style="text-decoration:none;">&laquo; Prev</a>
+        {% endif %}
+        {% for p in range(1, total_pages + 1) %}
+          {% if p == page %}
+            <span class="btn-ghost" style="opacity:1;background:rgba(255,255,255,0.16);">{{ p }}</span>
+          {% else %}
+            <a href="/dashboard?page={{ p }}{% if query %}&query={{ query }}{% endif %}" class="btn-ghost" style="text-decoration:none;">{{ p }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if page < total_pages %}
+          <a href="/dashboard?page={{ page + 1 }}{% if query %}&query={{ query }}{% endif %}" class="btn-ghost" style="text-decoration:none;">Next &raquo;</a>
+        {% endif %}
+      </div>
     {% endif %}
 
     {% if role == 'admin' %}

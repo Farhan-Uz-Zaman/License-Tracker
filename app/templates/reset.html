@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reset password - License Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0e27;
+    --bg-mid: #131836;
+    --text-primary: #f5f7fb;
+    --text-muted: rgba(245, 247, 251, 0.62);
+    --accent: #6ee7ff;
+    --accent-2: #a78bfa;
+    --glass-bg: rgba(255, 255, 255, 0.07);
+    --glass-border: rgba(255, 255, 255, 0.22);
+    --error: #ff8a9c;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 32px 20px 84px; font-family: var(--font-sans); color: var(--text-primary);
+    background:
+      radial-gradient(circle at 15% 20%, #2b1a5e 0%, transparent 45%),
+      radial-gradient(circle at 85% 15%, #0e3a5e 0%, transparent 50%),
+      radial-gradient(circle at 50% 90%, #1a2f5e 0%, transparent 55%),
+      linear-gradient(160deg, var(--bg-deep) 0%, var(--bg-mid) 45%, var(--bg-deep) 100%);
+  }
+  .card {
+    width: 100%; max-width: 420px; padding: 32px 30px; border-radius: 18px;
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    backdrop-filter: blur(22px) saturate(160%); -webkit-backdrop-filter: blur(22px) saturate(160%);
+  }
+  h2.form-title { font-family: var(--font-display); font-size: 1.6rem; margin: 0 0 6px; }
+  .form-subtitle { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 22px; }
+  .field { margin-bottom: 16px; }
+  .field-label { display: block; margin-bottom: 6px; font-size: 0.82rem; font-weight: 600; }
+  input[type="password"] {
+    width: 100%; padding: 12px 14px; border-radius: 10px; color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.07);
+    font: 400 0.92rem var(--font-sans);
+  }
+  input:focus { border-color: var(--accent); background: rgba(255,255,255,0.1); outline: none; }
+  .submit {
+    width: 100%; padding: 13px; border: none; border-radius: 11px; cursor: pointer;
+    font: 700 0.95rem var(--font-sans); color: #06121f;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  }
+  .error { color: var(--error); font-size: 0.86rem; margin-top: 14px; text-align: center; }
+  .back { text-align: center; margin-top: 16px; font-size: 0.86rem; }
+  .back a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h2 class="form-title">Set a new password</h2>
+    <p class="form-subtitle">Choose a password with at least 6 characters.</p>
+    {% if error %}
+      <div class="error">{{ error }}</div>
+      <div class="back"><a href="/forgot">Request a new link</a></div>
+    {% else %}
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label class="field-label" for="reset-password">New password</label>
+          <input type="password" id="reset-password" name="password" placeholder="Choose a new password" required autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label class="field-label" for="reset-confirm-password">Confirm new password</label>
+          <input type="password" id="reset-confirm-password" name="confirm_password" placeholder="Re-enter your new password" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="submit">Update password</button>
+      </form>
+    {% endif %}
+  </div>
+</body>
+</html>

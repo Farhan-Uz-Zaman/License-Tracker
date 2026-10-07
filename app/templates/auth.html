@@ -353,6 +353,7 @@
         </div>
         <input type="hidden" name="action" value="login">
         <button type="submit" class="submit">Log in</button>
+        <p class="field-hint" style="text-align:center;"><a href="/forgot" style="color:var(--accent);">Forgot password?</a></p>
       </form>
       {% if error and source == 'login' %}
         <div class="error">{{ error }}</div>
