@@ -5,7 +5,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./app:/app
+      - ./app/config:/app/config
     env_file:
       - .env
     restart: always

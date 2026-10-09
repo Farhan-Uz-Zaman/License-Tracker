@@ -34,19 +34,42 @@ def handle_csrf_error(e):
 # (overridable with DB_PATH), so it stays consistent inside the container
 DB_PATH = os.getenv("DB_PATH") or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'licenses.db')
 
-# Configuration file for email/Teams settings (admin-editable via dashboard)
-# Local dev: [repo_root]/config/settings.json
-# Inside Docker: /config/settings.json (mounted from host ./config)
+# Configuration file for email/Teams settings (admin-editable via dashboard).
+# Single location: <dir of app.py>/config/settings.json
+#  - local dev:       D:\LicenseTracker\app\config\settings.json
+#  - docker (volume): /app/config/settings.json  (host ./app/config mounted)
 def _config_file_path():
     candidate = os.environ.get('CONFIG_FILE')
     if candidate:
         return os.path.normpath(candidate)
-    return os.path.normpath(os.path.join(
+    path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        '..',
-        'config',
-        'settings.json'
-    ))
+        'config', 'settings.json')
+    return os.path.normpath(path)
+
+def _env_overrides(cfg):
+    """Fill empty values from environment (EC2/.env) without overwriting file values."""
+    mapping = {
+        'EMAIL_USER': 'email_user',
+        'EMAIL_PASS': 'email_pass',
+        'TEAMS_WEBHOOK': 'teams_webhook',
+        'SMTP_HOST': 'smtp_host',
+        'SMTP_PORT': 'smtp_port',
+    }
+    for env_key, cfg_key in mapping.items():
+        val = os.environ.get(env_key)
+        if val and not cfg.get(cfg_key):
+            cfg[cfg_key] = int(val) if cfg_key == 'smtp_port' and val.isdigit() else val
+    return cfg
+
+def save_config(data):
+    """Atomically write the settings JSON so a crash can't corrupt it."""
+    path = _config_file_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2)
+    os.replace(tmp, path)
 
 def load_config():
     """
@@ -62,13 +85,7 @@ def load_config():
         'email_pass': '',
         'teams_webhook': ''
     }
-    path = os.environ.get('CONFIG_FILE') or os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        '..',
-        'config',
-        'settings.json'
-    )
-    path = os.path.normpath(path)
+    path = _config_file_path()
     try:
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -76,10 +93,10 @@ def load_config():
             for key, val in defaults.items():
                 if key not in data:
                     data[key] = val
-            return data
+            return _env_overrides(data)
     except Exception:
         pass
-    return dict(defaults)
+    return _env_overrides(dict(defaults))
 
 
 # Initialize database
@@ -691,7 +708,21 @@ def admin_settings():
         return redirect('/auth')
     if session.get('role') != 'admin':
         return redirect('/dashboard')
-    
+
+    if request.method == 'POST':
+        cfg = load_config()
+        cfg['email_user'] = request.form.get('email_user', '').strip()
+        cfg['email_pass'] = request.form.get('email_pass', '').strip()
+        cfg['smtp_host'] = request.form.get('smtp_host', 'smtp.gmail.com').strip() or 'smtp.gmail.com'
+        try:
+            cfg['smtp_port'] = int(request.form.get('smtp_port', '587'))
+        except ValueError:
+            cfg['smtp_port'] = 587
+        cfg['teams_webhook'] = request.form.get('teams_webhook', '').strip()
+        save_config(cfg)
+        flash('Settings saved.', 'success')
+        return redirect(url_for('admin_settings'))
+
     cfg = load_config()
     return render_template('admin_settings.html', 
                          cfg=cfg, 

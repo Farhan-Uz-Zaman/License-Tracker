@@ -1,0 +1,11 @@
+services:
+  license-tracker:
+    image: farhanuzzaman/license-tracker:v3-test
+    container_name: license-tracker
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./app/config:/app/config
+    env_file:
+      - .env
+    restart: unless-stopped

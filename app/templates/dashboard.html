@@ -96,6 +96,18 @@
   }
   .btn-ghost:hover { background: rgba(255, 255, 255, 0.12); }
 
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  a.btn-ghost {
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+    line-height: 1.4;
+  }
+
   .glass-panel {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
@@ -294,9 +306,14 @@
         <img src="/static/logo.png" alt="Company Logo" class="logo">
         <h1>Welcome, {{ user }}{% if role == 'admin' %} (admin){% endif %}</h1>
       </div>
-      <form method="GET" action="/logout" class="logout-form">
-        <button type="submit" class="btn-ghost">Logout</button>
-      </form>
+      <div class="topbar-right">
+        {% if role == 'admin' %}
+        <a href="{{ url_for('admin_settings') }}" class="btn-ghost settings-link">Admin Settings</a>
+        {% endif %}
+        <form method="GET" action="/logout" class="logout-form">
+          <button type="submit" class="btn-ghost">Logout</button>
+        </form>
+      </div>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}

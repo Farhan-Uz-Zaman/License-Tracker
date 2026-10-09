@@ -1,57 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Settings - License Tracker</title>
-    <link rel="stylesheet" href="/static/css/admin.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Settings - License Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0e27;
+    --bg-mid: #131836;
+    --text-primary: #f5f7fb;
+    --text-muted: rgba(245, 247, 251, 0.62);
+    --accent: #6ee7ff;
+    --accent-2: #a78bfa;
+    --glass-bg: rgba(255, 255, 255, 0.07);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --error: #ff8a9c;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    background:
+      radial-gradient(circle at 15% 10%, #2b1a5e 0%, transparent 45%),
+      radial-gradient(circle at 88% 8%, #0e3a5e 0%, transparent 50%),
+      radial-gradient(circle at 50% 100%, #1a2f5e 0%, transparent 55%),
+      linear-gradient(160deg, var(--bg-deep) 0%, var(--bg-mid) 45%, var(--bg-deep) 100%);
+    position: relative;
+  }
+
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.4;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .blob-a { width: 460px; height: 460px; background: radial-gradient(circle, var(--accent) 0%, transparent 70%); top: -160px; left: -120px; animation: drift1 20s ease-in-out infinite; }
+  .blob-b { width: 420px; height: 420px; background: radial-gradient(circle, var(--accent-2) 0%, transparent 70%); top: 30%; right: -160px; animation: drift2 24s ease-in-out infinite; }
+
+  @keyframes drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,50px) scale(1.08); } }
+  @keyframes drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-50px,-30px) scale(1.06); } }
+
+  @media (prefers-reduced-motion: reduce) { .blob { animation: none; } }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 20px 100px;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+
+  .logo {
+    height: 40px;
+    filter: brightness(0) invert(1);
+    opacity: 0.9;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .btn-ghost {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+    font: 600 0.88rem var(--font-sans);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .btn-ghost:hover { background: rgba(255, 255, 255, 0.12); }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .glass-panel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    padding: 22px 24px;
+    margin-bottom: 22px;
+  }
+
+  .summary-label {
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    font-size: 0.9rem;
+  }
+
+  .flash {
+    padding: 11px 16px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    margin-bottom: 16px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+  }
+  .flash-success {
+    border-color: rgba(110, 231, 255, 0.35);
+    background: rgba(110, 231, 255, 0.12);
+    color: var(--accent);
+  }
+  .flash-danger {
+    border-color: rgba(255, 138, 156, 0.35);
+    background: rgba(255, 138, 156, 0.12);
+    color: var(--error);
+  }
+
+  .settings-form { display: flex; flex-direction: column; gap: 14px; }
+  .settings-form .field-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .settings-form .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .settings-form .field.full { grid-column: 1 / -1; }
+  .settings-form .field label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+  .settings-form .field .hint { font-weight: 400; opacity: 0.7; }
+
+  .settings-form input {
+    width: 100%;
+    min-width: 0;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+    font: 400 0.92rem var(--font-sans);
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .settings-form input::placeholder { color: rgba(245, 247, 251, 0.4); }
+  .settings-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-primary {
+    padding: 11px 22px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #0a0e27;
+    font: 600 0.9rem var(--font-sans);
+    cursor: pointer;
+    align-self: flex-start;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(110, 231, 255, 0.28); }
+
+  footer {
+    position: fixed;
+    right: 20px;
+    bottom: 16px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    z-index: 1;
+  }
+
+  @media (max-width: 600px) {
+    .topbar { flex-direction: column; align-items: flex-start; }
+    .settings-form .field-row { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo">License Tracker</div>
-        <ul class="nav-links">
-            <li><a href="/dashboard">Dashboard</a></li>
-            <li><a href="/admin">Admin Settings</a></li>
-            <li><a href="/users">Users</a></li>
-            <li><a href="/teams">Teams</a></li>
-        </ul>
-    </nav>
+  <div class="blob blob-a"></div>
+  <div class="blob blob-b"></div>
 
-    <main>
-        <!-- Admin Settings Page -->
-        <section id="admin-settings" class="admin-section">
-            <h1>Admin Settings</h1>
-            <form method="post" action="/admin/settings">
-                <div class="form-group">
-                    <label for="email-user">Primary Email Address</label>
-                    <input type="email" id="email-user" name="email_user" placeholder="admin@example.com" value="admin@example.com">
-                </div>
-                
-                <div class="form-group">
-                    <label for="email-pass">SMTP Password</label>
-                    <input type="password" id="email_pass" name="email_pass" placeholder="Enter SMTP password">
-                </div>
-                
-                <div class="form-group">
-                    <label for="smtp-host">SMTP Host</label>
-                    <input type="text" id="smtp_host" name="smtp_host" value="smtp.gmail.com">
-                </div>
-                
-                <div class="form-group">
-                    <label for="smtp-port">SMTP Port</label>
-                    <input type="number" id="smtp_port" name="smtp_port" value="587">
-                </div>
-                
-                <div class="form-group">
-                    <label for="teams-webhook">Teams Webhook URL</label>
-                    <input type="url" id="teams_webhook" name="teams_webhook" value="">
-                </div>
-                
-                <button type="submit" class="btn btn-primary">Save Settings</button>
-            </form>
-        </section>
-    </main>
+  <div class="page">
 
-    <script src="/static/js/admin.js"></script>
+    <div class="topbar">
+      <div class="topbar-left">
+        <img src="/static/logo.png" alt="Company Logo" class="logo">
+        <h1>Admin Settings</h1>
+      </div>
+      <div class="topbar-right">
+        <a href="{{ url_for('dashboard') }}" class="btn-ghost">Dashboard</a>
+        <form method="GET" action="/logout" class="logout-form">
+          <button type="submit" class="btn-ghost">Logout</button>
+        </form>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="glass-panel">
+      <div class="summary-label">Email &amp; Teams notifications</div>
+
+      <form method="post" action="{{ url_for('admin_settings') }}" class="settings-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="field-row">
+          <div class="field">
+            <label for="email-user">Primary Email Address <span class="hint">— used as the sender</span></label>
+            <input type="email" id="email-user" name="email_user" placeholder="you@gmail.com" value="{{ email_user }}">
+          </div>
+          <div class="field">
+            <label for="email_pass">SMTP Password <span class="hint">— Gmail App Password</span></label>
+            <input type="password" id="email_pass" name="email_pass" placeholder="Enter SMTP password" value="{{ email_pass }}">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="smtp_host">SMTP Host</label>
+            <input type="text" id="smtp_host" name="smtp_host" value="{{ smtp_host }}">
+          </div>
+          <div class="field">
+            <label for="smtp_port">SMTP Port</label>
+            <input type="number" id="smtp_port" name="smtp_port" value="{{ smtp_port }}">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field full">
+            <label for="teams_webhook">Teams Webhook URL <span class="hint">— optional</span></label>
+            <input type="url" id="teams_webhook" name="teams_webhook" placeholder="https://outlook.office.com/webhook/..." value="{{ teams_webhook }}">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary">Save Settings</button>
+      </form>
+    </div>
+
+    <div class="glass-panel">
+      <div class="summary-label">How reminders are sent</div>
+      <p style="margin:0; font-size:0.88rem; color:var(--text-muted); line-height:1.6;">
+        Emails go out automatically at <strong style="color:var(--text-primary);">40 days</strong>,
+        <strong style="color:var(--text-primary);">30 days</strong>, then <strong style="color:var(--text-primary);">every day from 14 days</strong>
+        before a license expires — to both the primary and secondary owner, using the settings above (SMTP over port 587 with STARTTLS).
+      </p>
+    </div>
+
+  </div>
+
+  <footer>License Tracker</footer>
 </body>
 </html>

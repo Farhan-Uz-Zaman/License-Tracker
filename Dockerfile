@@ -1,19 +1,12 @@
-FROM python:3.15-rc-alpine3.22
+FROM python:3.11-slim
 
-# Set timezone to Bangladesh
-ENV TZ=Asia/Dhaka
-
-# Set working directory
+ENV TZ=Asia/Dhaka PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# Copy application files
-COPY app/ .
-
-# Install dependencies
+COPY app/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose Flask port
-EXPOSE 5000
+COPY app/ ./
 
-# Run the application
+EXPOSE 5000
 CMD ["python", "app.py"]

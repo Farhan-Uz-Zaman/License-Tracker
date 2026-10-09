@@ -8,6 +8,10 @@ SNS.yml
 README.md
 functions
 amplify
-docker-compose.yml
-Dockerfile
+docker-compose.ec2.yml
 **/.app.py.swo
+__pycache__
+*.pyc
+*.db
+*.db-journal
+app/config/settings.json
