@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.15-rc-alpine3.22
 
 ENV TZ=Asia/Dhaka PYTHONUNBUFFERED=1
 WORKDIR /app
